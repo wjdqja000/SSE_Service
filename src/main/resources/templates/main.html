@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이벤트 관리</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .button-container button {
+            margin-right: 8px;
+        }
+    </style>
+
+</head>
+<body>
+<div id="app">
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>메시지</th>
+            <th>시간</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr v-for="event in events" :key="event.id">
+            <td>{{ event.id }}</td>
+            <td>{{ event.message }}</td>
+            <td>{{ getCurrentTime() }}</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    new Vue({
+        el: "#app",
+        data: {
+            events: [] // 서버로부터 받은 데이터를 저장할 배열
+        },
+        methods: {
+            pushData(event){
+                this.events.unshift(event);
+            },
+            make4Str() {
+                return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+            },
+            getCurrentTime() {
+                const now = new Date();
+                // 시간을 원하는 형식으로 포맷팅하거나 필요한 작업을 수행
+                const formattedTime = now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds();
+                return formattedTime;
+            }
+        },
+        mounted() {
+            let id = this.make4Str();
+            // SSE 연결
+            const url = "http://localhost:8080/api/sse/connect/"+id;    // 접속주소
+            const eventSource = new EventSource(url);               // sse 연결
+
+            eventSource.onopen = event => {
+                console.log("sse connection")
+            }
+
+            eventSource.onmessage = event => {
+                console.log("receive : "+event.data);
+                const data = JSON.parse(event.data);
+                this.pushData(data);
+            }
+
+            eventSource.onerror = event => {
+                console.log("sse error", event);
+            }
+        }
+    });
+</script>
+</body>
+</html>
